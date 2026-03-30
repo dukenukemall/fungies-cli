@@ -1,22 +1,22 @@
 import { Args, Command, Flags } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+import { getClient } from '../../lib/client.js'
 import { renderJson, renderTable, renderError } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class OffersGet extends Command {
   static description = 'Get offer details'
   static examples = ['<%= config.bin %> offers get off_123']
 
   static args = { id: Args.string({ description: 'Offer ID', required: true }) }
-  static flags = { format: Flags.string({ description: 'Output format', options: ['table', 'json', 'csv'], default: 'table' }) }
+  static flags = {
+    format: Flags.string({ description: 'Output format', options: ['table', 'json', 'csv'], default: 'table' }),
+    'api-key': Flags.string({ description: 'API key override' }),
+  }
 
   async run() {
     const { args, flags } = await this.parse(OffersGet)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      const client = getClient(flags['api-key'])
       const offer = await client.getOffer(args.id)
       if (flags.format === 'json') {
         renderJson(offer)
