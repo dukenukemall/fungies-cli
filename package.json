@@ -2,41 +2,54 @@
   "name": "fungies",
   "version": "0.1.0",
   "description": "Official CLI for the Fungies Merchant of Record API",
+  "keywords": ["fungies", "cli", "merchant-of-record", "payments"],
+  "homepage": "https://github.com/fungies/fungies-cli",
+  "bugs": "https://github.com/fungies/fungies-cli/issues",
+  "license": "MIT",
+  "author": "Fungies",
+  "type": "module",
+  "exports": "./dist/index.js",
   "bin": {
     "fungies": "./dist/index.js"
   },
-  "main": "./dist/index.js",
-  "type": "commonjs",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "lint": "eslint src/",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1",
+    "@oclif/core": "^4.0.0",
+    "@oclif/plugin-help": "^6.0.0",
+    "@oclif/plugin-version": "^2.0.0",
+    "chalk": "^5.3.0",
+    "cli-table3": "^0.6.3",
+    "conf": "^13.0.0",
+    "ky": "^1.7.0",
+    "ora": "^8.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.3.0",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.3.0",
+    "typescript": "^5.5.0"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsx src/index.ts",
-    "prepublishOnly": "npm run build"
-  },
-  "keywords": [
-    "fungies",
-    "cli",
-    "payments",
-    "merchant-of-record"
-  ],
-  "license": "MIT",
-  "dependencies": {
-    "@oclif/core": "^4.10.3",
-    "chalk": "^5.6.2",
-    "cli-table3": "^0.6.5",
-    "conf": "^15.1.0",
-    "ora": "^9.3.0",
-    "zod": "^4.3.6"
-  },
-  "devDependencies": {
-    "@types/node": "^25.5.0",
-    "tsup": "^8.5.1",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
+  "oclif": {
+    "bin": "fungies",
+    "dirname": "fungies",
+    "commands": "./dist/commands",
+    "plugins": [
+      "@oclif/plugin-help",
+      "@oclif/plugin-version"
+    ],
+    "topicSeparator": " "
   }
 }
