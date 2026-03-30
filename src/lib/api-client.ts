@@ -234,7 +234,7 @@ export class FungiesApiClient {
     return this.patch<{ data: Subscription }>(`/subscriptions/${id}/cancel`, data ?? {})
   }
   pauseSubscription(id: string, data?: Record<string, unknown>) {
-    return this.patch<{ data: Subscription }>(`/subscriptions/${id}/pause`, data ?? {})
+    return this.patch<{ data: Subscription }>(`/subscriptions/${id}/pauseCollection`, data ?? {})
   }
   chargeSubscription(id: string, data: { amount: number; currency: string }) {
     return this.post<{ data: Payment }>(`/subscriptions/${id}/charge`, data)

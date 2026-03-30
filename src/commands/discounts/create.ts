@@ -1,18 +1,17 @@
+import { getClient } from '../../lib/client.js'
 import { Command } from '@oclif/core'
 import * as p from '@clack/prompts'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+
+
 import { renderSuccess, renderError, renderJson } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class DiscountsCreate extends Command {
   static description = 'Create a discount interactively'
   static examples = ['<%= config.bin %> discounts create']
 
   async run() {
-    const key = getSecretKey()
     try {
-      requireAuth(key)
       p.intro('Create a discount')
       const type = await p.select({ message: 'Discount type', options: [{ value: 'coupon', label: 'Coupon code' }, { value: 'sale', label: 'Automatic sale' }] })
       if (p.isCancel(type)) { p.cancel('Cancelled'); this.exit(0) }
@@ -26,7 +25,7 @@ export default class DiscountsCreate extends Command {
       if (p.isCancel(answers)) { p.cancel('Cancelled'); this.exit(0) }
       const data: Record<string, unknown> = { type, ...answers, amount: parseInt(answers.amount as string, 10) }
       if (!(answers as Record<string, unknown>).expiresAt) delete data.expiresAt
-      const client = new FungiesApiClient(key)
+      const client = getClient()
       const discount = await client.createDiscount(data as never)
       renderSuccess(`Discount created: ${discount.id}`)
       renderJson(discount)

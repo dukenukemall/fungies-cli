@@ -1,8 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+
+
 import { renderJson, renderTable, renderError } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class DiscountsGet extends Command {
   static description = 'Get discount details'
@@ -13,10 +13,8 @@ export default class DiscountsGet extends Command {
 
   async run() {
     const { args, flags } = await this.parse(DiscountsGet)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      const client = getClient()
       const discount = await client.getDiscount(args.id)
       if (flags.format === 'json') {
         renderJson(discount)

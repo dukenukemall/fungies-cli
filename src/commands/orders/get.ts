@@ -1,8 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+
+
 import { renderJson, renderTable, renderError } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class OrdersGet extends Command {
   static description = 'Get order details'
@@ -13,10 +13,8 @@ export default class OrdersGet extends Command {
 
   async run() {
     const { args, flags } = await this.parse(OrdersGet)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      const client = getClient()
       const order = await client.getOrder(args.id)
       if (flags.format === 'json') {
         renderJson(order)

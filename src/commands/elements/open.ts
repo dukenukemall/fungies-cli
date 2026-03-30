@@ -1,8 +1,8 @@
 import { Args, Command } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+
+
 import { renderSuccess, renderError } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class ElementsOpen extends Command {
   static description = 'Print checkout URL for an element (and attempt to open in browser)'
@@ -12,10 +12,8 @@ export default class ElementsOpen extends Command {
 
   async run() {
     const { args } = await this.parse(ElementsOpen)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      const client = getClient()
       const element = await client.listElements()
       const found = (element.data ?? []).find((e) => e.id === args.id)
       if (!found) {

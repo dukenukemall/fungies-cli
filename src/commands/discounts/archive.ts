@@ -1,8 +1,8 @@
 import { Args, Command } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+
+
 import { renderSuccess, renderError } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class DiscountsArchive extends Command {
   static description = 'Archive a discount'
@@ -12,10 +12,8 @@ export default class DiscountsArchive extends Command {
 
   async run() {
     const { args } = await this.parse(DiscountsArchive)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      const client = getClient()
       await client.archiveDiscount(args.id)
       renderSuccess(`Discount ${args.id} archived`)
     } catch (err) {

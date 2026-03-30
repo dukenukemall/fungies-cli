@@ -1,8 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+
+
 import { renderSuccess, renderError, renderJson } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class SubscriptionsCharge extends Command {
   static description = 'Charge a subscription an additional amount'
@@ -16,10 +16,8 @@ export default class SubscriptionsCharge extends Command {
 
   async run() {
     const { args, flags } = await this.parse(SubscriptionsCharge)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      const client = getClient()
       const payment = await client.chargeSubscription(args.id, { amount: flags.amount, currency: flags.currency })
       renderSuccess(`Charged subscription ${args.id}`)
       renderJson(payment)
