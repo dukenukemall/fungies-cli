@@ -1,6 +1,6 @@
 {
   "name": "fungies",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Official CLI for the Fungies Merchant of Record API",
   "keywords": [
     "fungies",
@@ -8,8 +8,12 @@
     "merchant-of-record",
     "payments"
   ],
-  "homepage": "https://github.com/fungies/fungies-cli",
-  "bugs": "https://github.com/fungies/fungies-cli/issues",
+  "homepage": "https://github.com/dukenukemall/fungies-cli",
+  "bugs": "https://github.com/dukenukemall/fungies-cli/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dukenukemall/fungies-cli.git"
+  },
   "license": "MIT",
   "author": "Fungies",
   "type": "module",
