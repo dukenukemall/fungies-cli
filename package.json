@@ -1,0 +1,42 @@
+{
+  "name": "fungies",
+  "version": "0.1.0",
+  "description": "Official CLI for the Fungies Merchant of Record API",
+  "bin": {
+    "fungies": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "fungies",
+    "cli",
+    "payments",
+    "merchant-of-record"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@oclif/core": "^4.10.3",
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
+    "conf": "^15.1.0",
+    "ora": "^9.3.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
