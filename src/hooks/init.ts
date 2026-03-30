@@ -1,7 +1,68 @@
 import type { Hook } from '@oclif/core'
+import chalk from 'chalk'
+import * as p from '@clack/prompts'
+import { isAuthenticated, setPublicKey, setSecretKey } from '../lib/config.js'
 
-const hook: Hook<'init'> = async function () {
-  // Hook runs on every command init -- auth checking done per-command
+const SKIP_COMMANDS = ['help', 'version', 'auth:set', 'auth set', 'auth:clear', 'auth:whoami']
+
+const hook: Hook<'init'> = async function (opts) {
+  const cmd = opts.id ?? ''
+
+  // Skip onboarding for meta/auth commands
+  if (SKIP_COMMANDS.some(s => cmd === s || cmd.startsWith('help') || cmd.startsWith('version'))) return
+
+  // Skip if already authenticated
+  if (isAuthenticated()) return
+
+  // First-time onboarding
+  console.log()
+  console.log(chalk.hex('#8B5CF6').bold('  Welcome to Fungies CLI! 🍄'))
+  console.log(chalk.dim('  Let\'s get you connected to your store.\n'))
+  console.log(chalk.dim(`  Get your API keys at: ${chalk.cyan('https://app.fungies.io/devs/api-keys')}\n`))
+
+  p.intro(chalk.bold('  Quick Setup'))
+
+  const keys = await p.group(
+    {
+      publicKey: () =>
+        p.text({
+          message: 'Public Key',
+          placeholder: 'pub_...',
+          validate: (val) => {
+            if (!val) return 'Public key is required'
+            if (!val.startsWith('pub_')) return 'Public key must start with "pub_"'
+          },
+        }),
+      secretKey: () =>
+        p.text({
+          message: 'Secret Key ' + chalk.dim('(needed for write operations, press Enter to skip)'),
+          placeholder: 'sec_...',
+          validate: (val) => {
+            if (val && !val.startsWith('sec_')) return 'Secret key must start with "sec_"'
+          },
+        }),
+    },
+    {
+      onCancel: () => {
+        p.cancel(chalk.dim('Setup cancelled. Run any command again to retry, or use: fungies auth set'))
+        process.exit(0)
+      },
+    }
+  )
+
+  if (p.isCancel(keys)) {
+    process.exit(0)
+  }
+
+  setPublicKey(keys.publicKey as string)
+  if (keys.secretKey) setSecretKey(keys.secretKey as string)
+
+  p.outro(
+    chalk.green('✓ Connected! ') +
+    chalk.dim(`Run ${chalk.cyan('fungies auth whoami')} to verify, or try ${chalk.cyan('fungies orders list')}`)
+  )
+
+  console.log()
 }
 
 export default hook
