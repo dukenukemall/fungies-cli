@@ -1,8 +1,7 @@
 import { Args, Command, Flags } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
-import { renderJson, renderTable, renderError, type OutputFormat } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { getClient } from '../../lib/client.js'
+import { renderJson, renderTable, renderError } from '../../lib/output.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class ProductsGet extends Command {
   static description = 'Get product details'
@@ -14,14 +13,13 @@ export default class ProductsGet extends Command {
 
   static flags = {
     format: Flags.string({ description: 'Output format', options: ['table', 'json', 'csv'], default: 'table' }),
+    'api-key': Flags.string({ description: 'API key override' }),
   }
 
   async run() {
     const { args, flags } = await this.parse(ProductsGet)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      const client = getClient(flags['api-key'])
       const product = await client.getProduct(args.id)
       if (flags.format === 'json') {
         renderJson(product)
@@ -32,8 +30,8 @@ export default class ProductsGet extends Command {
             ['ID', product.id],
             ['Name', product.name],
             ['Type', product.type],
-            ['Slug', product.slug],
             ['Status', product.status],
+            ['Slug', product.slug],
             ['Description', product.description ?? ''],
             ['Created', product.createdAt],
             ['Updated', product.updatedAt],

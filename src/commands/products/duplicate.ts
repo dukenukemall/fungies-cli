@@ -1,8 +1,8 @@
-import { Args, Command } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+import { Args, Command, Flags } from '@oclif/core'
+import ora from 'ora'
+import { getClient } from '../../lib/client.js'
 import { renderSuccess, renderError, renderJson } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class ProductsDuplicate extends Command {
   static description = 'Duplicate a product'
@@ -12,13 +12,17 @@ export default class ProductsDuplicate extends Command {
     id: Args.string({ description: 'Product ID', required: true }),
   }
 
+  static flags = {
+    'api-key': Flags.string({ description: 'API key override' }),
+  }
+
   async run() {
-    const { args } = await this.parse(ProductsDuplicate)
-    const key = getSecretKey()
+    const { args, flags } = await this.parse(ProductsDuplicate)
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      const client = getClient(flags['api-key'])
+      const spinner = ora('Duplicating product...').start()
       const product = await client.duplicateProduct(args.id)
+      spinner.stop()
       renderSuccess(`Product duplicated: ${product.id}`)
       renderJson(product)
     } catch (err) {

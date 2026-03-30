@@ -1,18 +1,17 @@
 import { Command } from '@oclif/core'
 import * as p from '@clack/prompts'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+import ora from 'ora'
+import { getClient } from '../../lib/client.js'
 import { renderSuccess, renderError, renderJson } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class ProductsCreate extends Command {
   static description = 'Create a new product interactively'
   static examples = ['<%= config.bin %> products create']
 
   async run() {
-    const key = getSecretKey()
     try {
-      requireAuth(key)
+      const client = getClient()
       p.intro('Create a new product')
       const answers = await p.group({
         name: () => p.text({ message: 'Product name', validate: (v) => (!v ? 'Name is required' : undefined) }),
@@ -28,8 +27,9 @@ export default class ProductsCreate extends Command {
         description: () => p.text({ message: 'Description (optional)' }),
       })
       if (p.isCancel(answers)) { p.cancel('Cancelled'); this.exit(0) }
-      const client = new FungiesApiClient(key)
+      const spinner = ora('Creating product...').start()
       const product = await client.createProduct(answers)
+      spinner.stop()
       renderSuccess(`Product created: ${product.id}`)
       renderJson(product)
     } catch (err) {
