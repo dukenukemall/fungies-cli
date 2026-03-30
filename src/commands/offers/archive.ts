@@ -1,21 +1,27 @@
-import { Args, Command } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+import { Args, Command, Flags } from '@oclif/core'
+import * as p from '@clack/prompts'
+import { getClient } from '../../lib/client.js'
 import { renderSuccess, renderError } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class OffersArchive extends Command {
   static description = 'Archive an offer'
   static examples = ['<%= config.bin %> offers archive off_123']
 
   static args = { id: Args.string({ description: 'Offer ID', required: true }) }
+  static flags = {
+    'api-key': Flags.string({ description: 'API key override' }),
+    confirm: Flags.boolean({ description: 'Skip confirmation prompt', default: false }),
+  }
 
   async run() {
-    const { args } = await this.parse(OffersArchive)
-    const key = getSecretKey()
+    const { args, flags } = await this.parse(OffersArchive)
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      if (!flags.confirm) {
+        const confirmed = await p.confirm({ message: `Archive offer ${args.id}?` })
+        if (!confirmed || p.isCancel(confirmed)) { p.cancel('Cancelled'); this.exit(0) }
+      }
+      const client = getClient(flags['api-key'])
       await client.archiveOffer(args.id)
       renderSuccess(`Offer ${args.id} archived`)
     } catch (err) {

@@ -1,8 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core'
-import { getSecretKey } from '../../../lib/config.js'
-import { FungiesApiClient } from '../../../lib/api-client.js'
+import * as p from '@clack/prompts'
+import { getClient } from '../../../lib/client.js'
 import { renderSuccess, renderError } from '../../../lib/output.js'
-import { requireAuth, formatApiError } from '../../../lib/errors.js'
+import { formatApiError } from '../../../lib/errors.js'
 
 export default class OffersKeysRemove extends Command {
   static description = 'Remove keys from an offer'
@@ -15,15 +15,16 @@ export default class OffersKeysRemove extends Command {
   static flags = {
     'key-id': Flags.string({ description: 'Specific key ID to remove' }),
     'all-unsold': Flags.boolean({ description: 'Remove all unsold keys', default: false }),
+    'api-key': Flags.string({ description: 'API key override' }),
   }
 
   async run() {
     const { args, flags } = await this.parse(OffersKeysRemove)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      const client = getClient(flags['api-key'])
       if (flags['all-unsold']) {
+        const confirmed = await p.confirm({ message: `Remove all unsold keys from offer ${args.offerId}?` })
+        if (!confirmed || p.isCancel(confirmed)) { p.cancel('Cancelled'); this.exit(0) }
         const result = await client.removeAllUnsoldKeys(args.offerId)
         renderSuccess(`Removed ${result.removed} unsold keys from offer ${args.offerId}`)
       } else if (flags['key-id']) {

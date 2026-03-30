@@ -1,9 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { readFileSync } from 'node:fs'
-import { getSecretKey } from '../../../lib/config.js'
-import { FungiesApiClient } from '../../../lib/api-client.js'
+import { getClient } from '../../../lib/client.js'
 import { renderSuccess, renderError } from '../../../lib/output.js'
-import { requireAuth, formatApiError } from '../../../lib/errors.js'
+import { formatApiError } from '../../../lib/errors.js'
 
 export default class OffersKeysAdd extends Command {
   static description = 'Add keys to an offer'
@@ -16,13 +15,12 @@ export default class OffersKeysAdd extends Command {
   static flags = {
     keys: Flags.string({ description: 'Comma-separated keys' }),
     file: Flags.string({ description: 'Path to file with one key per line' }),
+    'api-key': Flags.string({ description: 'API key override' }),
   }
 
   async run() {
     const { args, flags } = await this.parse(OffersKeysAdd)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
       let keys: string[] = []
       if (flags.keys) {
         keys = flags.keys.split(',').map((k) => k.trim()).filter(Boolean)
@@ -33,7 +31,7 @@ export default class OffersKeysAdd extends Command {
         renderError('Provide --keys or --file')
         this.exit(1)
       }
-      const client = new FungiesApiClient(key)
+      const client = getClient(flags['api-key'])
       const result = await client.addKeys(args.offerId, keys)
       renderSuccess(`Added ${result.added} keys to offer ${args.offerId}`)
     } catch (err) {
