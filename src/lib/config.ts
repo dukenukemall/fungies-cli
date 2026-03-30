@@ -1,12 +1,20 @@
 import Conf from 'conf'
 
-const store = new Conf<{ secretKey?: string }>({
+const store = new Conf<{ publicKey?: string; secretKey?: string }>({
   projectName: 'fungies',
   projectSuffix: '',
 })
 
+export function getPublicKey(): string | undefined {
+  return store.get('publicKey')
+}
+
 export function getSecretKey(): string | undefined {
   return store.get('secretKey')
+}
+
+export function setPublicKey(key: string): void {
+  store.set('publicKey', key)
 }
 
 export function setSecretKey(key: string): void {
@@ -14,11 +22,12 @@ export function setSecretKey(key: string): void {
 }
 
 export function clearAuth(): void {
+  store.delete('publicKey')
   store.delete('secretKey')
 }
 
 export function isAuthenticated(): boolean {
-  return Boolean(store.get('secretKey'))
+  return Boolean(store.get('publicKey'))
 }
 
 export function maskKey(key: string): string {

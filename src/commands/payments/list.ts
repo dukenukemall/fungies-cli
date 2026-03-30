@@ -1,8 +1,7 @@
 import { Command, Flags } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+import { getClient } from '../../lib/client.js'
 import { renderOutput, renderError, type OutputFormat } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class PaymentsList extends Command {
   static description = 'List payments'
@@ -16,15 +15,22 @@ export default class PaymentsList extends Command {
 
   async run() {
     const { flags } = await this.parse(PaymentsList)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
-      const result = await client.listPayments({ limit: flags.limit, from: flags.from })
-      const payments = result.data ?? []
-      const headers = ['ID', 'Amount', 'Currency', 'Status', 'Created']
-      const rows = payments.map((p) => [p.id, (p.amount / 100).toFixed(2), p.currency, p.status, p.createdAt?.slice(0, 10) ?? ''])
+      const client = getClient()
+      const result = await client.listPayments({ take: flags.limit, createdFrom: flags.from })
+      const payments = result.items ?? []
+      const headers = ['ID', 'Number', 'Type', 'Status', 'Value', 'Currency', 'Created']
+      const rows = payments.map((p) => [
+        p.id,
+        p.number ?? '',
+        p.type ?? '',
+        p.status ?? '',
+        p.value !== undefined ? (p.value / 100).toFixed(2) : '',
+        p.currency ?? '',
+        p.createdAt ? new Date(p.createdAt as number).toISOString().slice(0, 10) : '',
+      ])
       renderOutput(flags.format as OutputFormat, headers, rows, result)
+      if (flags.format === 'table') console.log(`\n  ${payments.length} payment(s)${result.count ? ` (total: ${result.count})` : ''}`)
     } catch (err) {
       renderError(formatApiError(err))
       this.exit(1)

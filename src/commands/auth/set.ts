@@ -1,29 +1,44 @@
 import { Command, Flags } from '@oclif/core'
-import { setSecretKey } from '../../lib/config.js'
+import { setPublicKey, setSecretKey } from '../../lib/config.js'
 import { renderSuccess, renderError } from '../../lib/output.js'
 
 export default class AuthSet extends Command {
-  static description = 'Save your Fungies API key'
-  static examples = ['<%= config.bin %> auth set --key sk_your_key_here']
+  static description = 'Save your Fungies API keys'
+  static examples = [
+    '<%= config.bin %> auth set --public-key pub_... --secret-key sec_...',
+    '<%= config.bin %> auth set -p pub_... -s sec_...',
+  ]
 
   static flags = {
-    key: Flags.string({
-      char: 'k',
-      description: 'Your Fungies API secret key',
+    'public-key': Flags.string({
+      char: 'p',
+      description: 'Your Fungies public key (pub_...)',
       required: true,
+    }),
+    'secret-key': Flags.string({
+      char: 's',
+      description: 'Your Fungies secret key (sec_...)',
+      required: false,
     }),
   }
 
   async run() {
     const { flags } = await this.parse(AuthSet)
-    const key = flags.key
+    const pubKey = flags['public-key']
+    const secKey = flags['secret-key']
 
-    if (!key.startsWith('sk_') && !key.startsWith('pk_')) {
-      renderError('API key must start with "sk_" or "pk_"')
+    if (!pubKey.startsWith('pub_')) {
+      renderError('Public key must start with "pub_"')
       this.exit(1)
     }
 
-    setSecretKey(key)
-    renderSuccess('API key saved successfully')
+    if (secKey && !secKey.startsWith('sec_')) {
+      renderError('Secret key must start with "sec_"')
+      this.exit(1)
+    }
+
+    setPublicKey(pubKey)
+    if (secKey) setSecretKey(secKey)
+    renderSuccess(`API keys saved successfully${secKey ? ' (public + secret)' : ' (public only — read-only mode)'}`)
   }
 }

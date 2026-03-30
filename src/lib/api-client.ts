@@ -7,8 +7,21 @@ import type {
   Subscription,
   User,
   CheckoutElement,
-  PaginatedResponse,
+  PagedResult,
 } from '../types/api.js'
+
+// The Fungies API wraps list responses as { status: "success", data: { <resource>: [...], count: N } }
+function extractList<T>(body: Record<string, unknown>): PagedResult<T> {
+  const data = body.data as Record<string, unknown> | undefined
+  if (!data) return { items: [], count: 0 }
+  // Find the array value in data (e.g. data.orders, data.products, etc.)
+  for (const val of Object.values(data)) {
+    if (Array.isArray(val)) {
+      return { items: val as T[], count: (data.count as number | null) ?? val.length, hasMore: (data.hasMore as boolean | undefined) ?? false }
+    }
+  }
+  return { items: [], count: 0 }
+}
 
 const BASE_URL = 'https://api.fungies.io/v0'
 
@@ -23,40 +36,51 @@ export class ApiError extends Error {
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
-  if (!res.ok) {
+  const body = await res.json() as { status?: string; message?: string; error?: string | { message?: string }; data?: unknown }
+
+  // Fungies wraps errors as { status: "error", error: { message } } even with HTTP 200
+  const isApiError = body.status === 'error'
+
+  if (!res.ok || isApiError) {
     let message = `HTTP ${res.status}: ${res.statusText}`
-    try {
-      const body = (await res.json()) as { message?: string; error?: string }
-      message = body.message ?? body.error ?? message
-    } catch {
-      // ignore parse errors
+    if (typeof body.error === 'object' && (body.error as { message?: string })?.message) {
+      message = (body.error as { message: string }).message
+    } else if (typeof body.error === 'string') {
+      message = body.error
+    } else if (body.message) {
+      message = body.message
     }
-    switch (res.status) {
-      case 401:
-        throw new ApiError(401, `Authentication failed: ${message}. Run \`fungies auth set --key sk_...\` to authenticate.`)
-      case 404:
-        throw new ApiError(404, `Not found: ${message}`)
-      case 422:
-        throw new ApiError(422, `Validation error: ${message}`)
-      case 429:
-        throw new ApiError(429, `Rate limited: ${message}. Please wait before retrying.`)
-      case 500:
-        throw new ApiError(500, `Server error: ${message}`)
-      default:
-        throw new ApiError(res.status, message)
-    }
+
+    const status = res.status
+    if (status === 401) throw new ApiError(401, `Authentication failed: ${message}. Run \`fungies auth set --public-key pub_... --secret-key sec_...\` to authenticate.`)
+    if (status === 404) throw new ApiError(404, `Not found: ${message}`)
+    if (status === 422) throw new ApiError(422, `Validation error: ${message}`)
+    if (status === 429) throw new ApiError(429, `Rate limited: ${message}. Please wait before retrying.`)
+    if (status === 500 || isApiError) throw new ApiError(status, `API error: ${message}`)
+    throw new ApiError(status, message)
   }
-  return res.json() as Promise<T>
+
+  return body as T
 }
 
 export class FungiesApiClient {
   private headers: Record<string, string>
 
-  constructor(secretKey: string) {
+
+  constructor(publicKey: string, secretKey?: string) {
     this.headers = {
-      Authorization: `Bearer ${secretKey}`,
+      'x-fngs-public-key': publicKey,
       'Content-Type': 'application/json',
     }
+    if (secretKey) {
+      this.headers['x-fngs-secret-key'] = secretKey
+    }
+  }
+
+  private getReadHeaders(): Record<string, string> {
+    const h: Record<string, string> = { 'x-fngs-public-key': this.headers['x-fngs-public-key'] }
+    if (this.headers['x-fngs-secret-key']) h['x-fngs-secret-key'] = this.headers['x-fngs-secret-key']
+    return h
   }
 
   private async get<T>(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<T> {
@@ -66,7 +90,7 @@ export class FungiesApiClient {
         if (v !== undefined) url.searchParams.set(k, String(v))
       }
     }
-    const res = await fetch(url.toString(), { headers: this.headers })
+    const res = await fetch(url.toString(), { headers: this.getReadHeaders() })
     return handleResponse<T>(res)
   }
 
@@ -97,142 +121,154 @@ export class FungiesApiClient {
     return handleResponse<T>(res)
   }
 
-  // Products
-  listProducts(params?: { type?: string; limit?: number; page?: number }) {
-    return this.get<PaginatedResponse<Product>>('/products', params as Record<string, string | number | undefined>)
+  private async getList<T>(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<PagedResult<T>> {
+    const raw = await this.get<Record<string, unknown>>(path, params)
+    return extractList<T>(raw)
   }
-  getProduct(id: string) {
-    return this.get<Product>(`/products/${id}`)
+
+  // Products
+  listProducts(params?: { skip?: number; take?: number; termOrId?: string; statuses?: string }) {
+    return this.getList<Product>('/products/list', params as Record<string, string | number | undefined>)
+  }
+  async getProduct(id: string) {
+    const r = await this.get<{ data: Product }>(`/products/${id}`)
+    return r.data ?? r as unknown as Product
   }
   createProduct(data: Partial<Product>) {
-    return this.post<Product>('/products', data)
+    return this.post<{ data: Product }>('/products/create', data)
   }
   updateProduct(id: string, data: Partial<Product>) {
-    return this.patch<Product>(`/products/${id}`, data)
+    return this.patch<{ data: Product }>(`/products/${id}/update`, data)
   }
   archiveProduct(id: string) {
-    return this.delete<Product>(`/products/${id}`)
+    return this.patch<{ data: Product }>(`/products/${id}/archive`, {})
   }
   duplicateProduct(id: string) {
-    return this.post<Product>(`/products/${id}/duplicate`)
+    return this.post<{ data: Product }>(`/products/${id}/duplicate`)
   }
 
   // Offers
-  listOffers(params?: { productId?: string; limit?: number; page?: number }) {
-    return this.get<PaginatedResponse<Offer>>('/offers', params as Record<string, string | number | undefined>)
+  listOffers(params?: { skip?: number; take?: number; product?: string; termOrId?: string }) {
+    return this.getList<Offer>('/offers/list', params as Record<string, string | number | undefined>)
   }
-  getOffer(id: string) {
-    return this.get<Offer>(`/offers/${id}`)
+  async getOffer(id: string) {
+    const r = await this.get<{ data: Offer }>(`/offers/${id}`)
+    return r.data ?? r as unknown as Offer
   }
   createOffer(data: Partial<Offer>) {
-    return this.post<Offer>('/offers', data)
+    return this.post<{ data: Offer }>('/offers/create', data)
   }
   updateOffer(id: string, data: Partial<Offer>) {
-    return this.patch<Offer>(`/offers/${id}`, data)
+    return this.patch<{ data: Offer }>(`/offers/${id}/update`, data)
   }
   archiveOffer(id: string) {
-    return this.delete<Offer>(`/offers/${id}`)
+    return this.patch<{ data: Offer }>(`/offers/${id}/archive`, {})
   }
   addKeys(offerId: string, keys: string[]) {
-    return this.post<{ added: number }>(`/offers/${offerId}/keys`, { keys })
+    return this.post<Record<string, unknown>>(`/offers/${offerId}/keys/add`, { keys })
   }
   removeKey(offerId: string, keyId: string) {
-    return this.delete<void>(`/offers/${offerId}/keys/${keyId}`)
+    return this.delete<Record<string, unknown>>(`/offers/${offerId}/keys/${keyId}/removeUnsold`)
   }
   removeAllUnsoldKeys(offerId: string) {
-    return this.delete<{ removed: number }>(`/offers/${offerId}/keys`)
+    return this.delete<Record<string, unknown>>(`/offers/${offerId}/keys/removeAllUnsold`)
   }
 
   // Discounts
-  listDiscounts(params?: { active?: boolean; limit?: number; page?: number }) {
-    return this.get<PaginatedResponse<Discount>>('/discounts', params as Record<string, string | number | boolean | undefined>)
+  listDiscounts(params?: { status?: string; skip?: number; take?: number }) {
+    return this.getList<Discount>('/discounts/list', params as Record<string, string | number | undefined>)
   }
-  getDiscount(id: string) {
-    return this.get<Discount>(`/discounts/${id}`)
+  async getDiscount(id: string) {
+    const r = await this.get<{ data: Discount }>(`/discounts/${id}`)
+    return r.data ?? r as unknown as Discount
   }
   createDiscount(data: Partial<Discount>) {
-    return this.post<Discount>('/discounts', data)
+    return this.post<{ data: Discount }>('/discounts/create', data)
   }
   updateDiscount(id: string, data: Partial<Discount>) {
-    return this.patch<Discount>(`/discounts/${id}`, data)
+    return this.patch<{ data: Discount }>(`/discounts/${id}/update`, data)
   }
   archiveDiscount(id: string) {
-    return this.delete<Discount>(`/discounts/${id}`)
+    return this.patch<{ data: Discount }>(`/discounts/${id}/archive`, {})
   }
 
   // Orders
-  listOrders(params?: { status?: string; limit?: number; page?: number; from?: string }) {
-    return this.get<PaginatedResponse<Order>>('/orders', params as Record<string, string | number | undefined>)
+  listOrders(params?: { statuses?: string; skip?: number; take?: number; createdFrom?: string }) {
+    return this.getList<Order>('/orders/list', params as Record<string, string | number | undefined>)
   }
-  getOrder(id: string) {
-    return this.get<Order>(`/orders/${id}`)
+  async getOrder(id: string) {
+    const r = await this.get<{ data: Order }>(`/orders/${id}`)
+    return r.data ?? r as unknown as Order
   }
   cancelOrder(id: string) {
-    return this.post<Order>(`/orders/${id}/cancel`)
+    return this.patch<{ data: Order }>(`/orders/${id}/cancel`, {})
   }
   updateOrder(id: string, data: Partial<Order>) {
-    return this.patch<Order>(`/orders/${id}`, data)
+    return this.patch<{ data: Order }>(`/orders/${id}/update`, data)
   }
 
   // Payments
-  listPayments(params?: { limit?: number; page?: number; from?: string }) {
-    return this.get<PaginatedResponse<Payment>>('/payments', params as Record<string, string | number | undefined>)
+  listPayments(params?: { skip?: number; take?: number; createdFrom?: string }) {
+    return this.getList<Payment>('/payments/list', params as Record<string, string | number | undefined>)
   }
-  getPayment(id: string) {
-    return this.get<Payment>(`/payments/${id}`)
+  async getPayment(id: string) {
+    const r = await this.get<{ data: Payment }>(`/payments/${id}`)
+    return r.data ?? r as unknown as Payment
   }
 
   // Subscriptions
-  listSubscriptions(params?: { status?: string; limit?: number; page?: number }) {
-    return this.get<PaginatedResponse<Subscription>>('/subscriptions', params as Record<string, string | number | undefined>)
+  listSubscriptions(params?: { status?: string; skip?: number; take?: number }) {
+    return this.getList<Subscription>('/subscriptions/list', params as Record<string, string | number | undefined>)
   }
-  getSubscription(id: string) {
-    return this.get<Subscription>(`/subscriptions/${id}`)
+  async getSubscription(id: string) {
+    const r = await this.get<{ data: Subscription }>(`/subscriptions/${id}`)
+    return r.data ?? r as unknown as Subscription
   }
   createSubscription(data: Record<string, unknown>) {
-    return this.post<Subscription>('/subscriptions', data)
+    return this.post<{ data: Subscription }>('/subscriptions/create', data)
   }
   updateSubscription(id: string, data: Record<string, unknown>) {
-    return this.patch<Subscription>(`/subscriptions/${id}`, data)
+    return this.patch<{ data: Subscription }>(`/subscriptions/${id}/update`, data)
   }
   cancelSubscription(id: string, data?: { immediately?: boolean; refund?: boolean }) {
-    return this.delete<Subscription>(`/subscriptions/${id}`, data)
+    return this.patch<{ data: Subscription }>(`/subscriptions/${id}/cancel`, data ?? {})
   }
   pauseSubscription(id: string, data?: Record<string, unknown>) {
-    return this.patch<Subscription>(`/subscriptions/${id}/pause`, data ?? {})
+    return this.patch<{ data: Subscription }>(`/subscriptions/${id}/pause`, data ?? {})
   }
   chargeSubscription(id: string, data: { amount: number; currency: string }) {
-    return this.post<Payment>(`/subscriptions/${id}/charge`, data)
+    return this.post<{ data: Payment }>(`/subscriptions/${id}/charge`, data)
   }
 
   // Users
-  listUsers(params?: { search?: string; limit?: number; page?: number }) {
-    return this.get<PaginatedResponse<User>>('/users', params as Record<string, string | number | undefined>)
+  listUsers(params?: { term?: string; skip?: number; take?: number }) {
+    return this.getList<User>('/users/list', params as Record<string, string | number | undefined>)
   }
-  getUser(id: string) {
-    return this.get<User>(`/users/${id}`)
+  async getUser(id: string) {
+    const r = await this.get<{ data: User }>(`/users/${id}`)
+    return r.data ?? r as unknown as User
   }
   createUser(data: Partial<User>) {
-    return this.post<User>('/users', data)
+    return this.post<{ data: User }>('/users/create', data)
   }
   updateUser(id: string, data: Partial<User>) {
-    return this.patch<User>(`/users/${id}`, data)
+    return this.patch<{ data: User }>(`/users/${id}/update`, data)
   }
   archiveUser(id: string) {
-    return this.delete<User>(`/users/${id}`)
+    return this.patch<{ data: User }>(`/users/${id}/archive`, {})
   }
   unarchiveUser(id: string) {
-    return this.post<User>(`/users/${id}/unarchive`)
+    return this.patch<{ data: User }>(`/users/${id}/unarchive`, {})
   }
   getUserInventory(id: string) {
-    return this.get<{ data: unknown[] }>(`/users/${id}/inventory`)
+    return this.get<Record<string, unknown>>(`/users/${id}/inventory`)
   }
 
   // Elements
   listElements() {
-    return this.get<PaginatedResponse<CheckoutElement>>('/elements')
+    return this.getList<CheckoutElement>('/elements/list')
   }
   createElement(data: Partial<CheckoutElement>) {
-    return this.post<CheckoutElement>('/elements', data)
+    return this.post<{ data: CheckoutElement }>('/elements/create', data)
   }
 }

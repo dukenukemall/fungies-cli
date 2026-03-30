@@ -1,138 +1,128 @@
 export type ProductType = 'OneTimePayment' | 'Subscription' | 'Membership' | 'GameKey'
-export type ProductStatus = 'active' | 'archived'
-export type OfferStatus = 'active' | 'archived'
-export type DiscountType = 'coupon' | 'sale'
-export type AmountType = 'fixed' | 'percentage'
-export type OrderStatus = 'paid' | 'pending' | 'cancelled' | 'refunded'
-export type PaymentStatus = 'paid' | 'pending' | 'failed' | 'refunded'
-export type SubscriptionStatus = 'active' | 'cancelled' | 'paused' | 'past_due'
-
-export interface ProductVariant {
-  id: string
-  name: string
-  description?: string
-  status: ProductStatus
-  createdAt: string
-  updatedAt: string
-}
+export type ProductStatus = 'OPEN' | 'ARCHIVED' | 'active' | 'archived'
+export type OfferStatus = 'OPEN' | 'ARCHIVED' | 'active' | 'archived'
+export type OrderStatus = 'PAID' | 'PENDING' | 'CANCELLED' | 'REFUNDED' | 'paid' | 'pending' | 'cancelled' | 'refunded'
+export type PaymentStatus = 'PAID' | 'FAILED' | 'PENDING' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'EXPIRED'
+export type SubscriptionStatus = 'active' | 'canceled' | 'paused' | 'past_due'
 
 export interface Product {
   id: string
+  object?: string
   name: string
-  type: ProductType
-  slug: string
+  type?: ProductType
+  slug?: string
   description?: string
-  status: ProductStatus
-  variants?: ProductVariant[]
-  createdAt: string
-  updatedAt: string
+  status?: ProductStatus
+  createdAt?: number | string
+  updatedAt?: number | string
+  [key: string]: unknown
 }
 
 export interface Offer {
   id: string
-  productId: string
-  name: string
+  object?: string
   price: number
+  originalPrice?: number | null
   currency: string
-  recurring?: {
-    interval: 'day' | 'week' | 'month' | 'year'
-    intervalCount: number
-  }
-  status: OfferStatus
-  keyCount?: number
-  createdAt: string
-  updatedAt: string
+  recurringInterval?: string | null
+  recurringIntervalCount?: number | null
+  name?: string | null
+  status?: string
+  soldItems?: number
+  [key: string]: unknown
 }
 
 export interface Discount {
   id: string
-  code?: string
+  object?: string
+  type?: string
   name?: string
-  type: DiscountType
-  amount: number
-  amountType: AmountType
-  status: 'active' | 'archived'
-  usageCount: number
-  expiresAt?: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface CartItem {
-  offerId: string
-  offerName: string
-  quantity: number
-  unitPrice: number
-  total: number
-  currency: string
+  amount?: string | number
+  amountType?: string
+  discountCode?: string
+  status?: string
+  timesUsed?: number
+  validFrom?: number | null
+  validUntil?: number | null
+  currency?: string
+  [key: string]: unknown
 }
 
 export interface Order {
   id: string
-  orderNumber: string
-  status: OrderStatus
-  userId: string
-  cartItems: CartItem[]
-  total: number
-  currency: string
-  createdAt: string
-  updatedAt: string
+  object?: string
+  number?: string
+  orderNumber?: string
+  status?: string
+  userId?: string
+  value?: number
+  tax?: number
+  fee?: number
+  currency?: string
+  currencyDecimals?: number
+  country?: string
+  createdAt?: number | string
+  [key: string]: unknown
 }
 
 export interface Payment {
   id: string
-  orderId: string
-  userId: string
-  amount: number
-  currency: string
-  status: PaymentStatus
-  createdAt: string
-  updatedAt: string
+  object?: string
+  type?: string
+  number?: string
+  status?: string
+  value?: number
+  fee?: number
+  tax?: number
+  currency?: string
+  currencyDecimals?: number
+  createdAt?: number | string
+  userId?: string
+  invoiceUrl?: string | null
+  [key: string]: unknown
 }
 
 export interface Subscription {
   id: string
-  userId: string
-  offerId: string
-  status: SubscriptionStatus
-  currentPeriodEnd: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface BillingDetails {
-  name?: string
-  email?: string
-  address?: {
-    line1?: string
-    city?: string
-    state?: string
-    postalCode?: string
-    country?: string
-  }
+  object?: string
+  status?: string
+  createdAt?: number | string
+  currentIntervalEnd?: number | string
+  canceledAt?: number | string | null
+  userId?: string
+  orderId?: string | null
+  [key: string]: unknown
 }
 
 export interface User {
   id: string
-  email: string
-  name?: string
-  billingDetails?: BillingDetails
-  status?: 'active' | 'archived'
-  createdAt: string
-  updatedAt: string
+  object?: string
+  email?: string
+  username?: string | null
+  details?: Record<string, unknown>
+  internalId?: string | null
+  [key: string]: unknown
 }
 
 export interface CheckoutElement {
   id: string
-  name: string
-  offers: string[]
-  createdAt: string
-  updatedAt: string
+  object?: string
+  name?: string
+  offers?: string[]
+  createdAt?: number | string
+  [key: string]: unknown
 }
 
+export interface PagedResult<T> {
+  items: T[]
+  count: number | null
+  hasMore?: boolean
+}
+
+// Keep for backwards compat
 export interface PaginatedResponse<T> {
   data: T[]
-  meta: {
+  meta?: {
     total: number
     page: number
     limit: number

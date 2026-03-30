@@ -1,8 +1,7 @@
 import { Command, Flags } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+import { getClient } from '../../lib/client.js'
 import { renderOutput, renderError, type OutputFormat } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class UsersList extends Command {
   static description = 'List users'
@@ -16,15 +15,14 @@ export default class UsersList extends Command {
 
   async run() {
     const { flags } = await this.parse(UsersList)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
-      const result = await client.listUsers({ search: flags.search, limit: flags.limit })
-      const users = result.data ?? []
-      const headers = ['ID', 'Email', 'Name', 'Created']
-      const rows = users.map((u) => [u.id, u.email, u.name ?? '', u.createdAt?.slice(0, 10) ?? ''])
+      const client = getClient()
+      const result = await client.listUsers({ term: flags.search, take: flags.limit })
+      const users = result.items ?? []
+      const headers = ['ID', 'Email', 'Username', 'InternalID']
+      const rows = users.map((u) => [u.id, u.email ?? '', u.username ?? '', u.internalId ?? ''])
       renderOutput(flags.format as OutputFormat, headers, rows, result)
+      if (flags.format === 'table') console.log(`\n  ${users.length} user(s)${result.count ? ` (total: ${result.count})` : ''}`)
     } catch (err) {
       renderError(formatApiError(err))
       this.exit(1)

@@ -1,10 +1,11 @@
 import { FungiesApiClient } from './api-client.js'
-import { getSecretKey } from './config.js'
+import { getPublicKey, getSecretKey } from './config.js'
 
-export function getClient(apiKeyOverride?: string): FungiesApiClient {
-  const key = apiKeyOverride ?? getSecretKey()
-  if (!key) {
-    throw new Error('No API key configured. Run `fungies auth set --key sk_...` to authenticate.')
+export function getClient(): FungiesApiClient {
+  const pubKey = getPublicKey()
+  if (!pubKey) {
+    throw new Error('No API key configured. Run `fungies auth set --public-key pub_... --secret-key sec_...` to authenticate.')
   }
-  return new FungiesApiClient(key)
+  const secKey = getSecretKey()
+  return new FungiesApiClient(pubKey, secKey)
 }

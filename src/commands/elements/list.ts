@@ -1,8 +1,7 @@
 import { Command, Flags } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+import { getClient } from '../../lib/client.js'
 import { renderOutput, renderError, type OutputFormat } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class ElementsList extends Command {
   static description = 'List checkout elements'
@@ -14,15 +13,18 @@ export default class ElementsList extends Command {
 
   async run() {
     const { flags } = await this.parse(ElementsList)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
+      const client = getClient()
       const result = await client.listElements()
-      const elements = result.data ?? []
-      const headers = ['ID', 'Name', 'Offers', 'Created']
-      const rows = elements.map((e) => [e.id, e.name, (e.offers ?? []).length, e.createdAt?.slice(0, 10) ?? ''])
+      const elements = result.items ?? []
+      const headers = ['ID', 'Name', 'Created']
+      const rows = elements.map((e) => [
+        e.id,
+        e.name ?? '',
+        e.createdAt ? new Date(e.createdAt as number).toISOString().slice(0, 10) : '',
+      ])
       renderOutput(flags.format as OutputFormat, headers, rows, result)
+      if (flags.format === 'table') console.log(`\n  ${elements.length} element(s)`)
     } catch (err) {
       renderError(formatApiError(err))
       this.exit(1)

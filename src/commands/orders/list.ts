@@ -1,15 +1,14 @@
 import { Command, Flags } from '@oclif/core'
-import { getSecretKey } from '../../lib/config.js'
-import { FungiesApiClient } from '../../lib/api-client.js'
+import { getClient } from '../../lib/client.js'
 import { renderOutput, renderError, type OutputFormat } from '../../lib/output.js'
-import { requireAuth, formatApiError } from '../../lib/errors.js'
+import { formatApiError } from '../../lib/errors.js'
 
 export default class OrdersList extends Command {
   static description = 'List orders'
-  static examples = ['<%= config.bin %> orders list', '<%= config.bin %> orders list --status paid']
+  static examples = ['<%= config.bin %> orders list', '<%= config.bin %> orders list --status PAID']
 
   static flags = {
-    status: Flags.string({ description: 'Filter by status', options: ['paid', 'pending', 'cancelled', 'refunded'] }),
+    status: Flags.string({ description: 'Filter by status (PAID, PENDING, CANCELLED, REFUNDED)' }),
     limit: Flags.integer({ description: 'Number of results', default: 20 }),
     format: Flags.string({ description: 'Output format', options: ['table', 'json', 'csv'], default: 'table' }),
     from: Flags.string({ description: 'Start date (ISO format)' }),
@@ -17,15 +16,22 @@ export default class OrdersList extends Command {
 
   async run() {
     const { flags } = await this.parse(OrdersList)
-    const key = getSecretKey()
     try {
-      requireAuth(key)
-      const client = new FungiesApiClient(key)
-      const result = await client.listOrders({ status: flags.status, limit: flags.limit, from: flags.from })
-      const orders = result.data ?? []
-      const headers = ['ID', 'Order#', 'Status', 'Total', 'Currency', 'Created']
-      const rows = orders.map((o) => [o.id, o.orderNumber, o.status, (o.total / 100).toFixed(2), o.currency, o.createdAt?.slice(0, 10) ?? ''])
+      const client = getClient()
+      const result = await client.listOrders({ statuses: flags.status, take: flags.limit, createdFrom: flags.from })
+      const orders = result.items ?? []
+      const headers = ['ID', 'Order#', 'Status', 'Value', 'Currency', 'Country', 'Created']
+      const rows = orders.map((o) => [
+        o.id,
+        o.number ?? o.orderNumber ?? '',
+        o.status ?? '',
+        o.value !== undefined ? (o.value / 100).toFixed(2) : '',
+        o.currency ?? '',
+        o.country ?? '',
+        o.createdAt ? new Date(o.createdAt as number).toISOString().slice(0, 10) : '',
+      ])
       renderOutput(flags.format as OutputFormat, headers, rows, result)
+      if (flags.format === 'table') console.log(`\n  ${orders.length} order(s)${result.count ? ` (total: ${result.count})` : ''}`)
     } catch (err) {
       renderError(formatApiError(err))
       this.exit(1)

@@ -12,6 +12,6 @@ export function formatApiError(err: unknown): string {
 
 export function requireAuth(key: string | undefined): asserts key is string {
   if (!key) {
-    throw new Error('No API key configured. Run `fungies auth set --key sk_...` to authenticate.')
+    throw new Error('No API key configured. Run `fungies auth set --public-key pub_... --secret-key sec_...` to authenticate.')
   }
 }
