@@ -1,3 +1,4 @@
+import { getClient } from '../../lib/client.js'
 import { Args, Command } from '@oclif/core'
 import * as p from '@clack/prompts'
 

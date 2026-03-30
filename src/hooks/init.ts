@@ -14,7 +14,13 @@ const hook: Hook<'init'> = async function (opts) {
   // Skip if already authenticated
   if (isAuthenticated()) return
 
-  // First-time onboarding
+  // Skip onboarding in non-interactive environments (piped, CI, etc.)
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    console.error(chalk.red('✗ Not authenticated. Run: fungies auth set --public-key pub_... --secret-key sec_...'))
+    process.exit(1)
+  }
+
+  // First-time onboarding (interactive TTY only)
   console.log()
   console.log(chalk.hex('#8B5CF6').bold('  Welcome to Fungies CLI! 🍄'))
   console.log(chalk.dim('  Let\'s get you connected to your store.\n'))

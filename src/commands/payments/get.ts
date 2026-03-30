@@ -1,3 +1,4 @@
+import { getClient } from '../../lib/client.js'
 import { Args, Command, Flags } from '@oclif/core'
 
 

@@ -266,7 +266,7 @@ export class FungiesApiClient {
 
   // Elements
   listElements() {
-    return this.getList<CheckoutElement>('/elements/list')
+    return this.getList<CheckoutElement>('/elements/checkout/list')
   }
   createElement(data: Partial<CheckoutElement>) {
     return this.post<{ data: CheckoutElement }>('/elements/create', data)
