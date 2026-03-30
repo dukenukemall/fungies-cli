@@ -1,8 +1,13 @@
 {
   "name": "fungies",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Official CLI for the Fungies Merchant of Record API",
-  "keywords": ["fungies", "cli", "merchant-of-record", "payments"],
+  "keywords": [
+    "fungies",
+    "cli",
+    "merchant-of-record",
+    "payments"
+  ],
   "homepage": "https://github.com/fungies/fungies-cli",
   "bugs": "https://github.com/fungies/fungies-cli/issues",
   "license": "MIT",
@@ -10,9 +15,11 @@
   "type": "module",
   "exports": "./dist/index.js",
   "bin": {
-    "fungies": "./dist/index.js"
+    "fungies": "dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "node --loader ts-node/esm src/index.ts",
