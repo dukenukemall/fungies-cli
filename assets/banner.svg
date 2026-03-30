@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="200" viewBox="0 0 1200 200">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#C4399B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E05A2A;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0D0D0D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A0A2E;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="200" fill="url(#bg)" rx="12"/>
+  <text x="600" y="128" font-family="'Arial Black', Arial, sans-serif" font-size="90" font-weight="900" text-anchor="middle" fill="url(#grad)" letter-spacing="6">FUNGIES CLI</text>
+  <text x="600" y="168" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" fill="#666" letter-spacing="5">MERCHANT OF RECORD  ·  fungies.io</text>
+</svg>

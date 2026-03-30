@@ -1,6 +1,6 @@
 {
   "name": "fungies",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Official CLI for the Fungies Merchant of Record API",
   "keywords": [
     "fungies",
@@ -23,7 +23,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "assets"
   ],
   "scripts": {
     "build": "tsup",
