@@ -259,6 +259,52 @@ fungies users inventory <id>                    # View all purchases: products, 
 
 ---
 
+### Webhooks
+
+Fungies sends webhook events to your server for real-time notifications — payments, subscription changes, refunds, and more.
+
+**Supported events:**
+
+| Event | Fires when |
+|-------|-----------|
+| `payment.success` | Payment successfully processed |
+| `payment.refunded` | Payment or partial payment refunded |
+| `payment.failed` | Payment attempt fails |
+| `subscription.created` | New subscription created |
+| `subscription.interval` | Subscription renewed successfully |
+| `subscription.updated` | Subscription modified (upgrade/downgrade/pause) |
+| `subscription.cancelled` | Subscription cancelled |
+
+```bash
+# Start a local webhook listener (like stripe listen)
+fungies webhooks listen
+
+# Listen on a custom port and path, with signature verification
+fungies webhooks listen --port 3000 --path /webhooks/fungies --secret sec_your_key
+
+# Only show specific events
+fungies webhooks listen --filter-event payment.success --filter-event subscription.created
+
+# List all supported event types
+fungies webhooks events
+
+# Verify a webhook signature (useful for debugging)
+fungies webhooks verify --payload '{"event":"payment.success"}' \
+  --signature <sig-from-header> \
+  --secret sec_your_key
+```
+
+**Setting up local development with webhooks:**
+
+1. Start the listener: `fungies webhooks listen --secret sec_your_key`
+2. Expose it publicly: `ngrok http 4242`
+3. Copy the ngrok HTTPS URL → paste into [Fungies Dashboard → Developers → Webhooks](https://app.fungies.io/devs/webhooks)
+4. Events appear in your terminal as they fire
+
+> 📖 Help: [Using Webhooks](https://help.fungies.io/for-saas-developers/using-webhooks) · [Webhook Event Types](https://help.fungies.io/for-saas-developers/types-of-webhooks)
+
+---
+
 ### Checkout Elements
 
 **Checkout Elements** are embeddable or hosted checkout experiences you can integrate into your website or app. They handle the full checkout flow: payment collection, tax calculation, and order creation. There are three types:
