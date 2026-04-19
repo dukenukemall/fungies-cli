@@ -1,0 +1,16 @@
+import chalk from 'chalk'
+
+export const BANNER = `
+${chalk.hex('#8B5CF6')('  ███████╗██╗   ██╗███╗   ██╗ ██████╗ ██╗███████╗███████╗')}
+${chalk.hex('#9D6FDB')('  ██╔════╝██║   ██║████╗  ██║██╔════╝ ██║██╔════╝██╔════╝')}
+${chalk.hex('#B080C4')('  █████╗  ██║   ██║██╔██╗ ██║██║  ███╗██║█████╗  ███████╗')}
+${chalk.hex('#C490A8')('  ██╔══╝  ██║   ██║██║╚██╗██║██║   ██║██║██╔══╝  ╚════██║')}
+${chalk.hex('#D4699B')('  ██║     ╚██████╔╝██║ ╚████║╚██████╔╝██║███████╗███████║')}
+${chalk.hex('#E05A2A')('  ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ ╚═╝╚══════╝╚══════╝')}
+  ${chalk.dim('Merchant of Record CLI  ·  fungies.io')}
+`
+
+export function printBanner(stream: NodeJS.WriteStream = process.stderr): void {
+  if (!stream.isTTY) return
+  stream.write(BANNER + '\n')
+}

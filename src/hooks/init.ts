@@ -2,6 +2,7 @@ import type { Hook } from '@oclif/core'
 import chalk from 'chalk'
 import * as p from '@clack/prompts'
 import { isAuthenticated, setPublicKey, setSecretKey } from '../lib/config.js'
+import { printBanner } from '../lib/banner.js'
 
 const SKIP_COMMANDS = ['help', 'version', 'auth:set', 'auth:clear', 'auth:whoami']
 const HELP_FLAGS = ['--help', '-h', '--version', '-v', '-V']
@@ -29,7 +30,7 @@ const hook: Hook<'init'> = async function (opts) {
   }
 
   // First-time onboarding (interactive TTY only)
-  console.log()
+  printBanner(process.stdout)
   console.log(chalk.hex('#8B5CF6').bold('  Welcome to Fungies CLI! 🍄'))
   console.log(chalk.dim('  Let\'s get you connected to your store.\n'))
   console.log(chalk.dim(`  Get your API keys at: ${chalk.cyan('https://app.fungies.io/devs/api-keys')}\n`))
