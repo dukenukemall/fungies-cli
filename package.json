@@ -1,6 +1,6 @@
 {
   "name": "fungies",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Official CLI for the Fungies Merchant of Record API",
   "keywords": [
     "fungies",
