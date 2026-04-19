@@ -3,13 +3,21 @@ import chalk from 'chalk'
 import * as p from '@clack/prompts'
 import { isAuthenticated, setPublicKey, setSecretKey } from '../lib/config.js'
 
-const SKIP_COMMANDS = ['help', 'version', 'auth:set', 'auth set', 'auth:clear', 'auth:whoami']
+const SKIP_COMMANDS = ['help', 'version', 'auth:set', 'auth:clear', 'auth:whoami']
+const HELP_FLAGS = ['--help', '-h', '--version', '-v', '-V']
 
 const hook: Hook<'init'> = async function (opts) {
   const cmd = opts.id ?? ''
 
+  // Skip onboarding when the user just wants help or version info
+  // (covers `fungies`, `fungies --help`, `fungies -h`, `fungies <cmd> --help`, etc.)
+  const argv = process.argv.slice(2)
+  const wantsHelp = argv.length === 0 || argv.some(a => HELP_FLAGS.includes(a))
+  if (wantsHelp) return
+
   // Skip onboarding for meta/auth commands
-  if (SKIP_COMMANDS.some(s => cmd === s || cmd.startsWith('help') || cmd.startsWith('version'))) return
+  if (cmd === '' || cmd.startsWith('help') || cmd.startsWith('version')) return
+  if (SKIP_COMMANDS.includes(cmd)) return
 
   // Skip if already authenticated
   if (isAuthenticated()) return
