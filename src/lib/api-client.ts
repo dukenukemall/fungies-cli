@@ -23,7 +23,7 @@ function extractList<T>(body: Record<string, unknown>): PagedResult<T> {
   return { items: [], count: 0 }
 }
 
-const BASE_URL = 'https://api.fungies.io/v0'
+const DEFAULT_BASE_URL = 'https://api.fungies.io/v0'
 
 export class ApiError extends Error {
   constructor(
@@ -65,9 +65,10 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export class FungiesApiClient {
   private headers: Record<string, string>
+  private baseUrl: string
 
-
-  constructor(publicKey: string, secretKey?: string) {
+  constructor(publicKey: string, secretKey?: string, baseUrl: string = DEFAULT_BASE_URL) {
+    this.baseUrl = baseUrl
     this.headers = {
       'x-fngs-public-key': publicKey,
       'Content-Type': 'application/json',
@@ -84,7 +85,7 @@ export class FungiesApiClient {
   }
 
   private async get<T>(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<T> {
-    const url = new URL(`${BASE_URL}${path}`)
+    const url = new URL(`${this.baseUrl}${path}`)
     if (params) {
       for (const [k, v] of Object.entries(params)) {
         if (v !== undefined) url.searchParams.set(k, String(v))
@@ -95,7 +96,7 @@ export class FungiesApiClient {
   }
 
   private async post<T>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
       headers: this.headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -104,7 +105,7 @@ export class FungiesApiClient {
   }
 
   private async patch<T>(path: string, body: unknown): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'PATCH',
       headers: this.headers,
       body: JSON.stringify(body),
@@ -113,7 +114,7 @@ export class FungiesApiClient {
   }
 
   private async delete<T>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'DELETE',
       headers: this.headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,

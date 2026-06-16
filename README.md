@@ -64,14 +64,23 @@ npx fungies [command]
 
 ### 1. Get your API keys
 
-Go to your [Fungies Dashboard](https://app.fungies.io/devs/api-keys) → **Developers → API Keys** and generate your keys.
+Generate your keys in the dashboard for whichever environment you want to use:
+
+| Environment | Dashboard | API base URL |
+|-------------|-----------|--------------|
+| **Production** | [app.fungies.io/devs/api-keys](https://app.fungies.io/devs/api-keys) | `https://api.fungies.io/v0` |
+| **Sandbox** (staging) | [app.stage.fungies.net](https://app.stage.fungies.net/register) | `https://api.stage.fungies.net/v0` |
 
 | Key | Prefix | Required for |
 |-----|--------|-------------|
 | Public Key | `pub_` | All read operations |
 | Secret Key | `sec_` | Write operations (create, update, archive) |
 
+> Sandbox products, subscriptions, payouts, and webhooks are completely separate from production. See [Sandbox Mode](https://help.fungies.io/workspace-settings/sandbox-mode).
+
 ### 2. Authenticate
+
+The first time you run a command, an interactive wizard asks which environment to use and stores your keys for it. Or set them directly:
 
 ```bash
 fungies auth set --public-key pub_your_key_here --secret-key sec_your_key_here
@@ -83,11 +92,17 @@ Read-only mode (no secret key):
 fungies auth set --public-key pub_your_key_here
 ```
 
+Save keys for sandbox without switching to it:
+
+```bash
+fungies auth set --public-key pub_... --secret-key sec_... --mode sandbox
+```
+
 ### 3. Verify the connection
 
 ```bash
 fungies auth whoami
-# ✓ Connected | Public: pub_****abc= | Secret: sec_****xyz=
+# ✓ Connected | Mode: Production | Public: pub_****abc= | Secret: sec_****xyz=
 ```
 
 ---
@@ -97,9 +112,36 @@ fungies auth whoami
 ### Authentication
 
 ```bash
-fungies auth set --public-key pub_... --secret-key sec_...
-fungies auth whoami    # Verify connection
-fungies auth clear     # Remove saved keys
+fungies auth set --public-key pub_... --secret-key sec_...              # Save keys for the active mode
+fungies auth set --public-key pub_... --secret-key sec_... --mode sandbox  # Save keys for a specific mode
+fungies auth whoami            # Verify connection for the active mode
+fungies auth clear             # Remove saved keys for the active mode
+fungies auth clear --mode sandbox  # Clear a specific mode
+fungies auth clear --all       # Clear keys for every mode
+```
+
+---
+
+### Switching environments (Production / Sandbox)
+
+The CLI keeps separate credentials for **production** and **sandbox**, and remembers which one is active. Every command then talks to the matching API (`api.fungies.io` vs `api.stage.fungies.net`).
+
+```bash
+fungies mode             # Show the active mode and which modes have keys saved
+fungies mode sandbox     # Switch to sandbox (staging)
+fungies mode prod        # Switch to production
+fungies mode             # (in a terminal) interactively pick a mode
+```
+
+Aliases: `prod` = `production`/`live`, `sandbox` = `staging`/`stage`/`test`.
+
+A typical workflow:
+
+```bash
+fungies auth set -p pub_... -s sec_... --mode sandbox   # save sandbox keys once
+fungies mode sandbox                                    # switch to sandbox
+fungies products list                                   # → hits api.stage.fungies.net
+fungies mode prod                                       # switch back to production
 ```
 
 ---

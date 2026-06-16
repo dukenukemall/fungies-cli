@@ -5,3 +5,8 @@ dist/
 *.log
 .DS_Store
 coverage/
+
+# Local-only knowledge stores (Cursor rules, running memory, Obsidian wiki)
+.cursor/
+.memory/
+.wiki/

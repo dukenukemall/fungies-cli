@@ -1,12 +1,12 @@
 import { Command, Flags } from '@oclif/core'
-import { setPublicKey, setSecretKey } from '../../lib/config.js'
+import { setPublicKey, setSecretKey, getMode, normalizeMode, MODE_LABELS } from '../../lib/config.js'
 import { renderSuccess, renderError } from '../../lib/output.js'
 
 export default class AuthSet extends Command {
-  static description = 'Save your Fungies API keys'
+  static description = 'Save your Fungies API keys for a given mode (defaults to the active mode)'
   static examples = [
     '<%= config.bin %> auth set --public-key pub_... --secret-key sec_...',
-    '<%= config.bin %> auth set -p pub_... -s sec_...',
+    '<%= config.bin %> auth set -p pub_... -s sec_... --mode sandbox',
   ]
 
   static flags = {
@@ -18,6 +18,11 @@ export default class AuthSet extends Command {
     'secret-key': Flags.string({
       char: 's',
       description: 'Your Fungies secret key (sec_...)',
+      required: false,
+    }),
+    mode: Flags.string({
+      char: 'm',
+      description: 'Which mode these keys belong to: prod or sandbox (defaults to current mode)',
       required: false,
     }),
   }
@@ -37,8 +42,17 @@ export default class AuthSet extends Command {
       this.exit(1)
     }
 
-    setPublicKey(pubKey)
-    if (secKey) setSecretKey(secKey)
-    renderSuccess(`API keys saved successfully${secKey ? ' (public + secret)' : ' (public only — read-only mode)'}`)
+    const mode = flags.mode ? normalizeMode(flags.mode) : getMode()
+    if (!mode) {
+      renderError(`Unknown mode "${flags.mode}". Use "prod" or "sandbox".`)
+      this.exit(1)
+      return
+    }
+
+    setPublicKey(pubKey, mode)
+    if (secKey) setSecretKey(secKey, mode)
+    renderSuccess(
+      `API keys saved for ${MODE_LABELS[mode]} mode${secKey ? ' (public + secret)' : ' (public only — read-only mode)'}`,
+    )
   }
 }
